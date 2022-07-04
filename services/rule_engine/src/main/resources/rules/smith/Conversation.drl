@@ -1,0 +1,26 @@
+
+package rules.nola;
+import com.mindsmiths.telegramAdapter.TelegramReceivedMessage;
+import agents.Nola;
+import com.mindsmiths.gpt3.completion.GPT3Completion;
+
+rule "Handle message"
+    when
+        message: TelegramReceivedMessage() from entry-point "signals"
+        agent: Nola()
+    then
+        modify(agent) {addMessageToMemory("Human", message.getText())};
+        agent.askGPT3();
+        delete(message);
+end
+
+rule "Send GPT3 response"
+    when
+        gpt3Result: GPT3Completion() from entry-point "signals"
+        agent: Nola()
+    then
+        String response = gpt3Result.getBestResponse();
+        agent.sendMessage(response);
+        modify(agent) {addMessageToMemory("Nola", response)};
+        delete(gpt3Result);
+end
